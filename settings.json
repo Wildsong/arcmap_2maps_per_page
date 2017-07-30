@@ -1,0 +1,14 @@
+{
+    "mxdfile" : "testlayout.mxd",
+    "outputFolder" : "test_maps",
+    "maps" : [
+	{
+	    "outputname" : "imagery_",
+	    "layers": [ "!Basemap Topo", "Basemap Imagery" ]
+	},
+	{
+	    "outputname" : "topo_",
+	    "layers" : [ "Basemap Topo", "!Basemap Imagery" ]
+	}
+    ]
+}
