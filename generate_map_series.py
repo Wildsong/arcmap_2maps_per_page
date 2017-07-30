@@ -8,6 +8,12 @@ from utils import dictlist
 
 min_x = max_x = min_y = max_y = max_height = 0
 
+def usage():
+    print("""Usage: python generate_map_series.py <settings.json>
+where "<settings.json>" is the name of a file describing the map
+series you want to print.""")
+    exit(1)
+
 def get_frames(mxd):
     """ Return a list frames[] with the dataframes we need for this project. 
 Side effect: find the limits of the frames and put them in globals. """
@@ -286,7 +292,10 @@ def generate_mapset(mxd, frames, l, basename, controlled_layers):
 
 if __name__ == "__main__":
 
-    jsonfile = "settings.json"
+    try:
+        jsonfile = sys.argv[1]
+    except:
+        usage()
 
     with open(jsonfile,"r") as fp:
         settings = json.load(fp)
