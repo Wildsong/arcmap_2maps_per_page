@@ -83,25 +83,28 @@ it puts "Map N" under each map, where "N" is the page number 1...5.
 
 ## Sample layout
 
-Here is ASCII art of the layout that is in testlayout.mxd.
+This is what one page from the sample MXD looks like.
 
-```
-    +-----------------------------+----+
-    |                             |    |
-    |            map 1            |  RefMap
-    |                             +----+
-    |                       scalebar N |
-    +----------------------------------+
+![Sample topo maps 1 and 2](https://github.com/Geo-CEG/arcmap_2maps_per_page/blob/master/map_series_sample.png)
 
-    +----------------------------------+
-    |                                  |
-    |            map 2                 |
-    |                                  |
-    |                       scalebar N |
-    +----------------------------------+
-```
+### Multiple maps
 
-# Resources
+In the data driven pages index (the shapefile called "indexforddp" in
+this repo) the column "layout" is set to 2 for this page so there are
+2 maps. If it were set to 1 then the top map would be removed and the
+lower one would expand to fill the printable area.
+
+### Wandering locator map
+
+In my example, I move the little locator map around just to show how
+it's done. I wish I could leave the locator fixed in one location on
+my layouts but sometimes it ends up obscuring important details on one
+map in a series so I put this feature in to allow for that.
+
+The sample generates two series, one with a topo layer as the basemap
+and one with an aerial photo as the basemap.
+
+# Additional resources
 
 See the article that inspired me to try this project, [Combining data driven pages with pythona and arcpy mapping](https://blogs.esri.com/esri/arcgis/2010/12/14/combining-data-driven-pages-with-python-and-arcpy-mapping/)
 
