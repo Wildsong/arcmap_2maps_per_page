@@ -1,5 +1,9 @@
 # arcmap_2maps_per_page
-Python script to generate PDF map series with 2 maps per page 
+Python script to generate PDF map series with 2 maps per page
+
+*If this project interests you and you want more information or you
+need help with it please contact me, if I don't get feedback I will
+not continue to improve it. -- brian@wildsong.biz*
 
 This script was written for a project that initially required a 22"x34"
 sheet with 2 map per sheet and 4 total sheets.  Since ArcMap
@@ -36,13 +40,13 @@ to use ESRI's arcpy module.
 
 Open a command window, navigate to where you downloaded and type like this.
 
- ````
+ ````bash
  python generate_map_series.py settings.json
  ````
 
 If python is not on your path, use the full path, for example,
 
- ````
+ ````bash
  C:\Python27\ArcGISx6410.5\python generate_map_series.py settings.json
  ````
 
@@ -99,7 +103,7 @@ Here is ASCII art of the layout that is in testlayout.mxd.
 
 # Resources
 
-See https://blogs.esri.com/esri/arcgis/2010/12/14/combining-data-driven-pages-with-python-and-arcpy-mapping/
+See the article that inspired me to try this project, [Combining data driven pages with pythona and arcpy mapping](https://blogs.esri.com/esri/arcgis/2010/12/14/combining-data-driven-pages-with-python-and-arcpy-mapping/)
 
 There are a lot of options for the exportToPDF function.
-Refer to https://desktop.arcgis.com/en/arcmap/latest/analyze/arcpy-mapping/exporttopdf.htm
+Refer to [ExportToPDF](https://desktop.arcgis.com/en/arcmap/latest/analyze/arcpy-mapping/exporttopdf.htm) at ESRI web site
