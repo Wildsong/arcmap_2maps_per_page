@@ -6,7 +6,7 @@ from utils import dictlist
 
 """ See the README.md file for complete information! """
 
-min_x = max_x = min_y = max_y = max_height = 0
+f2_hgt = max_height = 0
 
 def usage():
     print("""Usage: python generate_map_series.py <settings.json>
@@ -14,10 +14,16 @@ where "<settings.json>" is the name of a file describing the map
 series you want to print.""")
     exit(1)
 
+def get_element(mxd, name):
+    for e in arcpy.mapping.ListLayoutElements(mxd):
+        if e.name == name:
+            return e
+    return None
+
 def get_frames(mxd):
     """ Return a list frames[] with the dataframes we need for this project. 
-Side effect: find the limits of the frames and put them in globals. """
-    global min_x, max_x, min_y, max_y, max_height
+Side effect: find the positions of the frames and put them in globals. """
+    global f2_hgt, max_height
 
     # Your MXD is expected to have these, in this order
     # 
@@ -34,16 +40,11 @@ Side effect: find the limits of the frames and put them in globals. """
     # Maybe we don't use all of these in this project
     # but it might be nice to have them around.
     
-    min_x = frames[0].elementPositionX
-    max_x = min_x + frames[0].elementWidth
-    
-    min_y = frames[1].elementPositionY
-    max_y = frames[0].elementPositionY + frames[0].elementHeight
-
-    max_height = max_y - min_y
-
-    print("min x, max x %s,%s" % (min_x, max_x))
-    print("min y, max y %s,%s" % (min_y, max_y))
+    f1_y   = frames[0].elementPositionY
+    f1_hgt = frames[0].elementHeight
+    f2_hgt = frames[1].elementHeight
+    f2_y = frames[1].elementPositionY
+    max_height = f1_y + f1_hgt - f2_y
 
     # Append the locator frame or an empty entry
     try:
@@ -56,7 +57,7 @@ Side effect: find the limits of the frames and put them in globals. """
     return frames
 
 def read_page_definitions(fc, locator=None):
-    """ Use the feature class to define each page """
+    """ Use the feature class 'fc' to define each page """
 
     pages = []
 
@@ -128,19 +129,18 @@ Returns the number of PDF files generated. """
         if p[4] == 1:
             print("single map layout")
 
-            # By using frame 2, the scale bar / n arrow stay on bottom
-            # instead of ending up in the middle if I were to use map frame 1
-
-            # Move frame 1 off the page, so it won't be in the PDF.
-
-            f1.elementPositionX = 100
-            f1.credits = "" # erase the credits text too.
+            # Make frame 1 invisible
+            f2_visible(False)
 
             # Set up frame 2
-            # Order matters:
+            # Order matters!
+            #   0 adjust frame size
             #   1 set rotation
             #   2 set extent
-            #   2 set scale
+            #   3 set scale
+
+            # Make frame 2 fill the page
+            f2.elementHeight = max_height
             
             rotation = p[3]
             if rotation == None: rotation = 0
@@ -149,15 +149,18 @@ Returns the number of PDF files generated. """
             if p[2] != None: f2.scale = p[2]
             f2.credits  = "map %d" % (ddp_index+1)
             print("%d scale:%s rotation:%s" % (ddp_index, f2.scale, f2.rotation))
-            # Make frame 2 fill the page
-
-            f2.elementHeight    = max_height
             
             basename = pdfbase + str(ddp_index+1)
 
         else:
             print("two map layout")
 
+            f2_visible(True)
+            f1.credits = "map %d" % (ddp_index+1)
+
+            # Make frame 2 its normal size
+            f2.elementHeight = f2_hgt
+            
             # Set up frame 1
 
             rotation = p[3]
@@ -167,14 +170,6 @@ Returns the number of PDF files generated. """
             if p[2] != None: f1.scale = p[2]
             print("%d scale:%s rotation:%s" % (ddp_index, f1.scale, f1.rotation))
             # Make map 2 fit on 1/2 page
-
-            f2.elementHeight    = f1.elementHeight
-            f2.elementWidth     = f1.elementWidth
-            
-            # Move map1 onto the page (in case we moved it off)
-
-            f1.elementPositionX = min_x
-            f1.credits = "map %d" % (ddp_index+1)
 
             ddp_index += 1
             p = ddp_layer[ddp_index]
@@ -206,28 +201,47 @@ Returns the number of PDF files generated. """
         if os.path.exists(tmppdf):
             os.unlink(tmppdf)
 
-        # *** NOTE NOTE NOTE ***
-        # To get the ref map to highlight "extent indicators" correctly
-        # you have to use the ddp exportToPDF method.
+        # *** NOTE NOTE NOTE *** To get the locator map to highlight
+        # "extent indicators" correctly you have to use the ddp
+        # exportToPDF method. I don't want ArcMap messing with extent
+        # of Frame 1 and Frame 2, so I put an extra dataframe in the
+        # MXD, and tie the DDP index to it.
         #
-        # This has a strange side effect of changing the settings we made above!
-        # Since the dataframe selected in the MXD in is set to "Frame 2"
-        # then we should be okay. If you set it to "Frame 1" then
-        # you will see the same output in both frames on the 2 frame layout.
-        #
-        # If you never use a reference map with extent indicators
-        # you could use this, it's not as confusing:
-#        arcpy.mapping.ExportToPDF(tmppdf, "RANGE", str(ddp_index+1)
+        # If you never use a locator map with extent indicators
+        # you could use this instead, it's not as confusing:
+#        arcpy.mapping.ExportToPDF(mxd, tmppdf, 
 #                                  resolution=600, image_quality="BEST")
-        
+
         ddp.exportToPDF(tmppdf, "RANGE", str(ddp_index+1),
-                                  resolution=600, image_quality="BEST")
+                        resolution=600, image_quality="BEST")
 
         page_count += 1
         ddp_index += 1
 
     del mxd
     return page_count
+
+# If any of these elements exist they will be made invisible on single map pages
+twopage_elements = ["Frame 1", "North Arrow 1", "Scale Bar 1", "Scale Text 1", "Credits 1"]
+dvisible = {}
+
+def f2_initialize(mxd):
+    """ Save the locations of the elements that will be made "invisible" on single map pages. """
+    global dvisible
+    for e in arcpy.mapping.ListLayoutElements(mxd):
+        if e.name in twopage_elements:
+            dvisible[e] = e.elementPositionX
+            
+def f2_visible(state):
+    """ Move these elements on or off the page to make them visible or invisible. """
+    for e in dvisible:
+        # I wish the "visible" property worked!
+        if state:
+            # Move it back to its starting position
+            e.elementPositionX = dvisible[e]
+        else:
+            # Move it off the page
+            e.elementPositionX = 1000 
 
 class maplayers(object):
     
@@ -327,6 +341,9 @@ if __name__ == "__main__":
 
     # Find the data frames we will be manipulating.
     frames  = get_frames(mxd)
+
+    # Save positions of the elements we need to "make invisible".
+    f2_initialize(mxd)
 
     total = 0
     for map in settings["maps"]:
